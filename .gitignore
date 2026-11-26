@@ -1,0 +1,30 @@
+# dependencies
+node_modules/
+
+# build output & framework caches
+dist/
+.astro/
+.vite/
+
+# environment / secrets
+.env
+.env.*
+!.env.example
+
+# logs
+*.log
+npm-debug.log*
+
+# editors & OS
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# local tooling
+.claude/settings.local.json
+
+# full-resolution portrait source (2 MB, not needed for the build; `npm run portrait` uses it locally)
+assets-src/

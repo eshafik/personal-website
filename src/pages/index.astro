@@ -1,0 +1,167 @@
+---
+import Base from '../layouts/Base.astro';
+import CV from '../components/CV.astro';
+import { profile as P } from '../data/profile';
+import { journeyHTML } from '../terminal/journey';
+import { getArticles, readingMinutes, articleUrl } from '../data/research';
+
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+
+const articles = (await getArticles()).map((a) => ({
+  slug: a.id,
+  title: a.data.title,
+  abstract: a.data.abstract,
+  date: a.data.date.toISOString(),
+  updated: a.data.updated?.toISOString(),
+  topics: a.data.topics,
+  minutes: readingMinutes(a.body),
+  url: articleUrl(a.id),
+}));
+
+const primary = [
+  ['about', 'Personal introduction'],
+  ['journey', 'Engineering journey, textiles → AI'],
+  ['experience', 'Professional experience'],
+  ['expertise', 'Engineering capabilities'],
+  ['education', 'Academic qualifications'],
+  ['robotics', 'Robotics journey and projects'],
+  ['achievements', 'Awards and achievements'],
+  ['research', 'Technical research and articles'],
+  ['projects', 'Engineering projects'],
+  ['cv', 'Open full-screen CV'],
+  ['contact', 'Contact information'],
+  ['links', 'Professional profiles'],
+  ['help', 'All commands and keys'],
+];
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Person',
+  name: P.name,
+  alternateName: P.alias,
+  jobTitle: P.role,
+  worksFor: { '@type': 'Organization', name: P.company.name },
+  address: { '@type': 'PostalAddress', addressLocality: 'Dhaka', addressCountry: 'BD' },
+  alumniOf: P.education.filter((e) => e.institution).map((e) => ({ '@type': 'CollegeOrUniversity', name: e.institution })),
+  knowsAbout: P.expertise.map((x) => x.title),
+  url: new URL(import.meta.env.BASE_URL, Astro.site).href,
+  image: new URL(`${base}media/portrait-og.jpg`, Astro.site).href,
+  sameAs: P.links.map((l) => l.url),
+  ...(P.contact.email ? { email: `mailto:${P.contact.email}` } : {}),
+};
+const [first, ...rest] = P.name.split(' ');
+const msc = P.education.find((e) => e.id === 'masters')!;
+---
+<Base
+  title={`${P.name} (${P.alias}) — ${P.title}`}
+  description={`${P.name}, ${P.role} at ${P.company.name} in ${P.location}. ${P.identity.join(', ')}. Customer service technology, real-time messaging and telephony.`}
+  jsonLd={jsonLd}
+  htmlClass="term"
+>
+  <div class="app" id="app">
+    <header class="bar">
+      <span class="bar-title"><b>{P.handle}@dhaka</b>: ~</span>
+      <button type="button" class="tool hide-touch" data-palette aria-haspopup="dialog">Commands <kbd>Ctrl K</kbd></button>
+      <button type="button" class="tool primary" data-open-cv>CV</button>
+      <button type="button" class="tool" data-theme-toggle aria-label="Toggle light or dark theme">◐</button>
+    </header>
+
+    <main class="screen" id="screen" aria-label="Terminal">
+      <div id="output" class="output" aria-live="polite" aria-relevant="additions">
+        <section id="welcome" class="welcome" aria-labelledby="name">
+          <div class="w-id">
+            <p class="comment" aria-hidden="true"># whoami</p>
+            <div class="w-hero">
+              <img
+                class="w-photo"
+                src={`${base}media/portrait-400.webp`}
+                width="400"
+                height="400"
+                alt={`Portrait of ${P.name}`}
+                fetchpriority="high"
+                decoding="async"
+              />
+              <h1 id="name" class="w-name"><span class="md">{first}</span> {rest.join(' ')} <span class="w-alias">({P.alias})</span></h1>
+            </div>
+            <p class="w-title">Lead Software Engineer <span class="slash">/</span> Agentic AI Developer</p>
+            <p class="w-tag">Currently building intelligent agents and AI-powered communication systems at <strong>{P.company.name}</strong>.</p>
+            <dl class="w-kv">
+              <dt>location</dt><dd>{P.location}</dd>
+              <dt>education</dt><dd><button type="button" class="cmd" data-cmd="education masters">{msc.short}</button>, {msc.institution} · CGPA {msc.score}</dd>
+              <dt>focus</dt><dd>{P.focus.join(' · ')}</dd>
+              <dt>scope</dt><dd>Backend &amp; DevOps first — full stack with AI-assisted engineering</dd>
+              <dt>path</dt><dd>Textile Engineering → Robotics → Software → Agentic AI</dd>
+            </dl>
+            <div class="w-start">
+              <p>Type a command or select one from the suggestions below.</p>
+              <ul class="chips" aria-label="Quick commands">
+                {['about', 'experience', 'expertise', 'education', 'cv', 'contact', 'help'].map((c) => (
+                  <li><button type="button" class="cmd" data-cmd={c}>{c}</button></li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          <div class="w-journey">
+            <p class="comment" aria-hidden="true"># git log --graph --reverse ~/journey</p>
+            <h2 class="sr-only">Engineering journey</h2>
+            <Fragment set:html={journeyHTML()} />
+          </div>
+        </section>
+      </div>
+
+      <form class="prompt" id="prompt" role="search" autocomplete="off">
+        <div class="prompt-line">
+          <label for="cmd" class="ps1"><span class="ps1-user">visitor@shafik</span>:<span class="ps1-path">~</span>$<span class="sr-only"> Command</span></label>
+          <input
+            id="cmd"
+            type="text"
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded="false"
+            aria-controls="suggest"
+            aria-describedby="prompt-hint"
+            autocapitalize="off"
+            autocorrect="off"
+            spellcheck="false"
+            enterkeyhint="go"
+            placeholder="type a command, or pick one…"
+          />
+        </div>
+        <ul id="suggest" class="suggest" role="listbox" aria-label="Command suggestions" hidden></ul>
+        <p id="prompt-hint" class="sr-only">Suggestions appear as you type. Use up and down arrows to choose, Tab to complete, Enter to run.</p>
+      </form>
+    </main>
+
+    <footer class="status">
+      <span class="mode">VISITOR</span>
+      <span class="hints" aria-hidden="true">
+        <span><kbd>Tab</kbd> complete</span><span><kbd>↑↓</kbd> history</span><span><kbd>Esc</kbd> dismiss</span><span><kbd>Ctrl L</kbd> clear</span>
+      </span>
+      <span class="where">{P.company.name} · {P.location}</span>
+      <span class="touch">
+        <button type="button" class="tool primary" data-palette aria-haspopup="dialog">☰ Commands</button>
+        <button type="button" class="tool" data-cmd="home">~ Home</button>
+        <button type="button" class="tool" data-open-cv>CV</button>
+      </span>
+    </footer>
+  </div>
+
+  <CV />
+
+  <dialog id="palette" class="palette" aria-labelledby="palette-title">
+    <header><span id="palette-title">Commands — tap to run</span><button type="button" class="tool" data-close>Close</button></header>
+    <ul>
+      {primary.map(([c, d]) => <li><button type="button" data-cmd={c}><b>{c}</b><span>{d}</span></button></li>)}
+    </ul>
+  </dialog>
+
+  <dialog id="lightbox" class="lightbox" aria-label="Photo viewer">
+    <figure><img alt="" /><figcaption></figcaption></figure>
+    <button type="button" class="tool" data-close>Close</button>
+  </dialog>
+
+  <script type="application/json" id="articles" set:html={JSON.stringify(articles).replace(/</g, '\\u003c')} />
+  <script>
+    import '../terminal/app';
+  </script>
+</Base>

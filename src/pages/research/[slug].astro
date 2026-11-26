@@ -1,0 +1,362 @@
+---
+import 'katex/dist/katex.min.css';
+import Base from '../../layouts/Base.astro';
+import { render } from 'astro:content';
+import { profile as P } from '../../data/profile';
+import { getArticles, readingMinutes, articleUrl, type ResearchEntry } from '../../data/research';
+
+export async function getStaticPaths() {
+  const all = await getArticles();
+  return all.map((entry, i) => ({ params: { slug: entry.id }, props: { entry, newer: all[i - 1], older: all[i + 1], all } }));
+}
+
+interface Props { entry: ResearchEntry; newer?: ResearchEntry; older?: ResearchEntry; all: ResearchEntry[] }
+const { entry, newer, older, all } = Astro.props;
+const { Content, headings } = await render(entry);
+const d = entry.data;
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+const fmt = (x: Date) => x.toLocaleDateString('en-GB', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' });
+const toc = headings.filter((h) => h.depth <= 3);
+const related = all
+  .filter((a) => a.id !== entry.id && a.data.topics.some((t) => d.topics.includes(t)))
+  .slice(0, 3);
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'TechArticle',
+  headline: d.title,
+  description: d.abstract,
+  datePublished: d.date.toISOString(),
+  ...(d.updated ? { dateModified: d.updated.toISOString() } : {}),
+  author: { '@type': 'Person', name: P.name, url: new URL(base, Astro.site).href },
+  keywords: d.topics.join(', '),
+  mainEntityOfPage: new URL(articleUrl(entry.id), Astro.site).href,
+};
+---
+<Base title={`${d.title} — ${P.name}`} description={d.abstract} type="article" jsonLd={jsonLd} htmlClass="reader-page">
+  <meta slot="head" property="article:published_time" content={d.date.toISOString()} />
+  <div class="r-progress" aria-hidden="true"><span></span></div>
+  <header class="v-bar r-bar">
+    <a class="tool primary" href={base}>← <span class="lbl">Terminal</span></a>
+    <span class="v-title">~/research/{entry.id}</span>
+    {newer && <a class="tool" href={articleUrl(newer.id)} rel="prev" title={newer.data.title}>‹ Newer</a>}
+    {older && <a class="tool" href={articleUrl(older.id)} rel="next" title={older.data.title}>Older ›</a>}
+  </header>
+
+  <div class="r-wrap">
+    {toc.length > 1 && (
+      <nav class="r-toc" aria-label="Table of contents">
+        <details open>
+          <summary>Contents</summary>
+          <ol>{toc.map((h) => <li class={`d${h.depth}`}><a href={`#${h.slug}`}>{h.text}</a></li>)}</ol>
+        </details>
+      </nav>
+    )}
+    <article class="r-article">
+      <header class="r-head">
+        <p class="r-topics">{d.topics.join(' · ')}</p>
+        <h1>{d.title}</h1>
+        <p class="r-abstract">{d.abstract}</p>
+        <p class="r-meta">
+          {P.name} · <time datetime={d.date.toISOString()}>{fmt(d.date)}</time>
+          {d.updated && <> · revised <time datetime={d.updated.toISOString()}>{fmt(d.updated)}</time></>}
+          · {readingMinutes(entry.body)} min read
+          {d.draft && <strong> · DRAFT (dev only)</strong>}
+        </p>
+      </header>
+      <div class="prose"><Content /></div>
+      <footer class="r-foot">
+        {related.length > 0 && (
+          <section>
+            <h2>Related</h2>
+            <ul>{related.map((a) => <li><a href={articleUrl(a.id)}>{a.data.title}</a></li>)}</ul>
+          </section>
+        )}
+        <p><a href={base}>← Back to terminal</a> · <a href={`${base}rss.xml`}>RSS</a></p>
+      </footer>
+    </article>
+  </div>
+</Base>
+
+<script>
+  // Esc returns to the terminal; session state is restored there from storage.
+  const home = document.querySelector<HTMLAnchorElement>('.r-bar a.primary')!;
+  addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !(e.target as HTMLElement).closest('input,textarea')) home.click();
+  });
+  // Reading progress
+  const bar = document.querySelector<HTMLElement>('.r-progress span')!;
+  const update = () => {
+    const max = document.documentElement.scrollHeight - innerHeight;
+    bar.style.transform = `scaleX(${max > 0 ? Math.min(1, scrollY / max) : 1})`;
+  };
+  addEventListener('scroll', update, { passive: true });
+  update();
+  // Mermaid: loaded only when an article contains a diagram (before copy buttons wrap <pre>).
+  const blocks = document.querySelectorAll('pre > code.language-mermaid');
+  if (blocks.length) {
+    blocks.forEach((code) => {
+      const div = document.createElement('div');
+      div.className = 'mermaid';
+      div.textContent = code.textContent;
+      code.parentElement!.replaceWith(div);
+    });
+    const url = 'https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs';
+    import(/* @vite-ignore */ url).then(({ default: mermaid }) => {
+      mermaid.initialize({ startOnLoad: false, theme: document.documentElement.dataset.theme === 'light' ? 'neutral' : 'dark', fontFamily: 'JetBrains Mono Variable, monospace' });
+      mermaid.run({ querySelector: '.mermaid' });
+    });
+  }
+  // Copy buttons on code blocks
+  document.querySelectorAll<HTMLPreElement>('.prose pre').forEach((pre) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'copy r-copy';
+    b.textContent = 'copy';
+    b.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(pre.querySelector('code')?.innerText ?? pre.innerText);
+        b.textContent = 'copied';
+      } catch {
+        b.textContent = 'failed';
+      }
+      setTimeout(() => (b.textContent = 'copy'), 1500);
+    });
+    const wrap = document.createElement('div');
+    wrap.className = 'r-code';
+    pre.replaceWith(wrap);
+    wrap.append(pre, b);
+  });
+</script>
+
+<style is:global>
+  .reader-page body {
+    background: var(--surface);
+  }
+  .r-bar {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+  }
+  .r-progress {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    z-index: 6;
+  }
+  .r-progress span {
+    display: block;
+    height: 100%;
+    background: var(--cmd);
+    transform-origin: 0 50%;
+    transform: scaleX(0);
+  }
+  .r-wrap {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 720px) minmax(0, 1fr);
+    gap: 48px;
+    padding: 40px var(--gutter) 80px;
+  }
+  .r-article {
+    grid-column: 2;
+    min-width: 0;
+  }
+  .r-toc {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: end;
+    width: 240px;
+    position: sticky;
+    top: 72px;
+    align-self: start;
+    font-size: 0.8125rem;
+  }
+  .r-toc summary {
+    color: var(--text-2);
+    cursor: pointer;
+    margin-bottom: 8px;
+  }
+  .r-toc ol {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-left: 1px solid var(--border);
+  }
+  .r-toc li a {
+    display: block;
+    padding: 3px 12px;
+    color: var(--text-2);
+    text-decoration: none;
+  }
+  .r-toc li a:hover {
+    color: var(--text);
+  }
+  .r-toc li.d3 a {
+    padding-left: 24px;
+  }
+  .r-topics {
+    color: var(--cmd);
+    font-size: 0.8125rem;
+    margin: 0 0 12px;
+  }
+  .r-head h1 {
+    font-size: clamp(1.75rem, 1.2rem + 2vw, 2.5rem);
+    line-height: 1.15;
+    letter-spacing: -0.025em;
+    margin: 0 0 16px;
+  }
+  .r-abstract {
+    font: 400 1.125rem/1.6 var(--sans);
+    color: var(--text-2);
+    margin: 0 0 16px;
+  }
+  .r-meta {
+    font-size: 0.8125rem;
+    color: var(--text-3);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 24px;
+    margin: 0 0 32px;
+  }
+  .prose {
+    font: 400 1.0625rem/1.75 var(--sans);
+    color: var(--text);
+  }
+  .prose h2,
+  .prose h3 {
+    font-family: var(--mono);
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+    margin: 2.2em 0 0.6em;
+    scroll-margin-top: 64px;
+  }
+  .prose h2 {
+    font-size: 1.35rem;
+  }
+  .prose h3 {
+    font-size: 1.1rem;
+  }
+  .prose p,
+  .prose ul,
+  .prose ol,
+  .prose blockquote,
+  .prose table {
+    margin: 0 0 1.2em;
+  }
+  .prose blockquote {
+    border-left: 2px solid var(--border);
+    padding-left: 16px;
+    color: var(--text-2);
+  }
+  .prose code {
+    font: 0.88em var(--mono);
+    background: var(--surface-2);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  .prose pre code {
+    background: none;
+    padding: 0;
+    font-size: 0.875rem;
+  }
+  .r-code {
+    position: relative;
+    margin: 0 0 1.4em;
+  }
+  .prose pre {
+    margin: 0;
+    padding: 16px 18px;
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg) !important;
+    line-height: 1.55;
+  }
+  .prose .astro-code span {
+    color: var(--shiki-dark);
+  }
+  :root[data-theme='light'] .prose .astro-code span {
+    color: var(--shiki-light);
+  }
+  .r-copy {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: var(--surface);
+  }
+  .prose table {
+    border-collapse: collapse;
+    display: block;
+    overflow-x: auto;
+    font-size: 0.9375rem;
+    font-variant-numeric: tabular-nums;
+  }
+  .prose th,
+  .prose td {
+    border-bottom: 1px solid var(--border);
+    padding: 6px 14px 6px 0;
+    text-align: left;
+  }
+  .prose img {
+    max-width: 100%;
+    height: auto;
+  }
+  .prose .katex-display {
+    overflow-x: auto;
+    overflow-y: hidden;
+    padding: 4px 0;
+  }
+  .prose .mermaid {
+    margin: 0 0 1.4em;
+    text-align: center;
+  }
+  .prose .footnotes {
+    font-size: 0.9375rem;
+    color: var(--text-2);
+    border-top: 1px solid var(--border);
+    margin-top: 3em;
+  }
+  .r-foot {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 0.875rem;
+  }
+  .r-foot h2 {
+    font-size: 0.875rem;
+    color: var(--text-2);
+    margin: 0 0 8px;
+  }
+  @media (max-width: 1180px) {
+    .r-wrap {
+      grid-template-columns: minmax(0, 720px);
+      justify-content: center;
+      gap: 0;
+    }
+    .r-article {
+      grid-column: 1;
+    }
+    .r-toc {
+      position: static;
+      width: auto;
+      justify-self: stretch;
+      grid-row: auto;
+      margin: 0 0 24px;
+      border: 1px solid var(--border);
+      padding: 10px 14px;
+      order: 0;
+    }
+    .r-toc details:not([open]) summary {
+      margin: 0;
+    }
+  }
+  @media (max-width: 700px) {
+    .bar .tool span.lbl,
+    .r-bar .tool span.lbl {
+      display: none;
+    }
+    .r-wrap {
+      padding-top: 24px;
+    }
+  }
+</style>
