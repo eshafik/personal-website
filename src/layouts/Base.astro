@@ -9,12 +9,14 @@ import { profile } from '../data/profile';
 interface Props {
   title: string;
   description: string;
-  type?: 'website' | 'article';
+  type?: 'website' | 'article' | 'profile';
   jsonLd?: Record<string, unknown>;
   htmlClass?: string;
 }
 const { title, description, type = 'website', jsonLd, htmlClass } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
+const ogImage = new URL(`${import.meta.env.BASE_URL.replace(/\/?$/, '/')}og-card.jpg`, Astro.site).href;
+const ogAlt = `${profile.name} (${profile.alias}) — ${profile.title}`;
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
 ---
 <!doctype html>
@@ -25,18 +27,36 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta name="author" content={profile.name} />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1" />
     <link rel="canonical" href={canonical} />
     <meta name="theme-color" content="#111413" />
     <meta property="og:type" content={type} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
-    <meta property="og:site_name" content={profile.name} />
-    <meta property="og:image" content={new URL(`${base}media/portrait-og.jpg`, Astro.site)} />
-    <meta property="og:image:alt" content={`Portrait of ${profile.name}`} />
-    <meta name="twitter:card" content="summary" />
+    <meta property="og:site_name" content={`${profile.name} (${profile.alias})`} />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:secure_url" content={ogImage} />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={ogAlt} />
+    {type === 'profile' && (
+      <>
+        <meta property="profile:first_name" content="Shafikul" />
+        <meta property="profile:last_name" content="Islam" />
+        <meta property="profile:username" content={profile.alias} />
+      </>
+    )}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
+    <meta name="twitter:image:alt" content={ogAlt} />
     <link rel="icon" href={`${base}favicon.svg`} type="image/svg+xml" />
-    <link rel="alternate" type="application/rss+xml" title={`${profile.name} — Research`} href={`${base}rss.xml`} />
+    <link rel="icon" href={`${base}favicon-192.png`} type="image/png" sizes="192x192" />
+    <link rel="apple-touch-icon" href={`${base}apple-touch-icon.png`} />
     <link rel="sitemap" href={`${base}sitemap-index.xml`} />
     {jsonLd && <script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />}
     <script is:inline>

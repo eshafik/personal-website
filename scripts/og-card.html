@@ -1,0 +1,55 @@
+<!doctype html>
+<!-- Social share card (1200×630). Rendered to public/og-card.jpg by `npm run og` (needs Google Chrome). -->
+<html>
+<head>
+<meta charset="utf-8" />
+<style>
+  @font-face { font-family: 'JBM'; src: url('../node_modules/@fontsource-variable/jetbrains-mono/files/jetbrains-mono-latin-wght-normal.woff2') format('woff2'); font-weight: 100 800; }
+  @font-face { font-family: 'Plex'; src: url('../node_modules/@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2') format('woff2'); font-weight: 400; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1200px; height: 630px; background: #0c0f0e; }
+  body { font-family: 'JBM', monospace; color: #e0e5e1; padding: 28px; }
+  .win { width: 100%; height: 100%; background: #171b19; border: 1px solid #303a33; border-radius: 10px; display: grid; grid-template-rows: 44px 1fr 52px; overflow: hidden; }
+  .bar { display: flex; align-items: center; padding: 0 26px; border-bottom: 1px solid #303a33; background: #111413; font-size: 17px; color: #929d95; }
+  .bar b { color: #e0e5e1; font-weight: 600; }
+  .main { display: grid; grid-template-columns: 330px 1fr; gap: 48px; align-items: center; padding: 0 56px; }
+  .photo { width: 330px; height: 330px; border-radius: 10px; border: 1px solid #303a33; box-shadow: 0 0 0 6px #171b19, 0 0 0 7px #303a33; object-fit: cover; display: block; }
+  .comment { color: #6f7a72; font-size: 20px; margin-bottom: 14px; }
+  h1 { font-size: 60px; line-height: 1.02; letter-spacing: -0.035em; font-weight: 700; }
+  h1 .md { font-weight: 300; color: #929d95; }
+  .alias { font-size: 24px; color: #929d95; margin-top: 10px; }
+  .role { margin-top: 26px; font-size: 27px; line-height: 1.35; font-weight: 600; color: #a3d9ae; }
+  .role span { color: #6f7a72; font-weight: 400; }
+  .at { margin-top: 10px; font: 400 23px/1.4 'Plex', sans-serif; color: #c9d1cb; }
+  .tags { margin-top: 22px; display: flex; flex-wrap: wrap; gap: 10px; }
+  .tags span { font-size: 17px; padding: 5px 12px; border: 1px solid #3c4a40; border-radius: 5px; color: #a3d9ae; }
+  .status { display: flex; align-items: center; justify-content: space-between; padding: 0 26px 0 0; border-top: 1px solid #303a33; background: #111413; font-size: 19px; }
+  .prompt { display: flex; align-items: center; gap: 0; }
+  .mode { background: #a3d9ae; color: #111413; font-weight: 700; padding: 0 16px; line-height: 52px; margin-right: 20px; letter-spacing: .04em; }
+  .prompt .u { color: #a3d9ae; font-weight: 600; } .prompt .p { color: #8bafc9; } .prompt .c { color: #e0e5e1; margin-left: 10px; }
+  .cursor { display: inline-block; width: 11px; height: 22px; background: #a3d9ae; margin-left: 6px; vertical-align: -3px; }
+  .url { color: #e0e5e1; font-weight: 600; letter-spacing: .01em; }
+  .url span { color: #6f7a72; font-weight: 400; }
+</style>
+</head>
+<body>
+  <div class="win">
+    <div class="bar"><b>shafik@dhaka</b>: ~</div>
+    <div class="main">
+      <img class="photo" src="../public/media/portrait-og.jpg" alt="" />
+      <div>
+        <p class="comment"># whoami</p>
+        <h1><span class="md">Md.</span> Shafikul Islam</h1>
+        <p class="alias">(MSI Shafik)</p>
+        <p class="role">Lead Software Engineer<br /><span>&gt;</span> Agentic AI Developer</p>
+        <p class="at">Building AI agents and real-time communication systems at Mevrik · Dhaka, Bangladesh</p>
+        <div class="tags"><span>AI Agents</span><span>RAG</span><span>Voice AI &amp; Telephony</span><span>Backend &amp; DevOps</span></div>
+      </div>
+    </div>
+    <div class="status">
+      <div class="prompt"><span class="mode">VISITOR</span><span class="u">visitor@shafik</span>:<span class="p">~</span>$<span class="c">about</span><span class="cursor"></span></div>
+      <div class="url"><span>https://</span>shafik.dev</div>
+    </div>
+  </div>
+</body>
+</html>

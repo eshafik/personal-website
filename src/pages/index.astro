@@ -22,27 +22,60 @@ const primary = [
   ['help', 'All commands and keys'],
 ];
 
+const home = new URL(import.meta.env.BASE_URL, Astro.site).href;
+const person = `${home}#person`;
+const portrait = new URL(`${base}media/portrait-og.jpg`, Astro.site).href;
+const pageTitle = `${P.name} (${P.alias}) — Lead Software Engineer & Agentic AI Developer`;
+const pageDescription = `${P.role} at ${P.company.name}, ${P.location}. Builds AI agents, RAG systems, Voice AI and real-time customer communication platforms — from textile engineering to Agentic AI.`;
 const jsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'Person',
-  name: P.name,
-  alternateName: P.alias,
-  jobTitle: P.role,
-  worksFor: { '@type': 'Organization', name: P.company.name },
-  address: { '@type': 'PostalAddress', addressLocality: 'Dhaka', addressCountry: 'BD' },
-  alumniOf: P.education.filter((e) => e.institution).map((e) => ({ '@type': 'CollegeOrUniversity', name: e.institution })),
-  knowsAbout: P.expertise.map((x) => x.title),
-  url: new URL(import.meta.env.BASE_URL, Astro.site).href,
-  image: new URL(`${base}media/portrait-og.jpg`, Astro.site).href,
-  sameAs: P.links.map((l) => l.url),
-  ...(P.contact.email ? { email: `mailto:${P.contact.email}` } : {}),
+  '@graph': [
+    { '@type': 'WebSite', '@id': `${home}#website`, url: home, name: `${P.name} (${P.alias})`, inLanguage: 'en', publisher: { '@id': person } },
+    {
+      '@type': 'ProfilePage',
+      '@id': `${home}#profile`,
+      url: home,
+      name: pageTitle,
+      description: pageDescription,
+      isPartOf: { '@id': `${home}#website` },
+      mainEntity: { '@id': person },
+      primaryImageOfPage: { '@id': `${home}#portrait` },
+      inLanguage: 'en',
+    },
+    {
+      '@type': 'Person',
+      '@id': person,
+      name: P.name,
+      alternateName: [P.alias, P.shortName],
+      givenName: 'Shafikul',
+      familyName: 'Islam',
+      jobTitle: P.role,
+      description: `${P.summary} ${P.stack}`,
+      url: home,
+      image: { '@type': 'ImageObject', '@id': `${home}#portrait`, url: portrait, width: 640, height: 640, caption: `Portrait of ${P.name}` },
+      worksFor: { '@type': 'Organization', name: P.company.name },
+      address: { '@type': 'PostalAddress', addressLocality: 'Dhaka', addressCountry: 'BD' },
+      alumniOf: P.education.filter((e) => e.institution).map((e) => ({ '@type': 'CollegeOrUniversity', name: e.institution })),
+      hasCredential: P.education
+        .filter((e) => e.institution)
+        .map((e) => ({ '@type': 'EducationalOccupationalCredential', name: e.degree, credentialCategory: 'degree', recognizedBy: { '@type': 'CollegeOrUniversity', name: e.institution } })),
+      award: P.robotics.awards.map((a) => `${a.place}, ${a.event} ${a.year} (${a.host})`),
+      knowsAbout: [...new Set(P.expertise.flatMap((x) => [x.title, ...x.areas]))],
+      sameAs: P.links.filter((l) => ['LinkedIn', 'Blog'].includes(l.label)).map((l) => l.url),
+      ...(P.contact.email ? { email: `mailto:${P.contact.email}` } : {}),
+    },
+    ...P.ventures
+      .filter((v) => v.role === 'Founder')
+      .map((v) => ({ '@type': 'Organization', name: v.name, url: v.url, description: v.description, founder: { '@id': person } })),
+  ],
 };
 const [first, ...rest] = P.name.split(' ');
 const msc = P.education.find((e) => e.id === 'masters')!;
 ---
 <Base
-  title={`${P.name} (${P.alias}) — ${P.title}`}
-  description={`${P.name}, ${P.role} at ${P.company.name} in ${P.location}. ${P.identity.join(', ')}. Customer service technology, real-time messaging and telephony.`}
+  title={pageTitle}
+  description={pageDescription}
+  type="profile"
   jsonLd={jsonLd}
   htmlClass="term"
 >

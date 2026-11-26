@@ -9,7 +9,7 @@ import { unified } from '@astrojs/markdown-remark';
 // - user site (USERNAME.github.io repo)  -> BASE=/
 // - project site (any other repo name)   -> BASE=/repo-name
 // - custom domain                         -> SITE=https://your.domain, BASE=/
-const site = process.env.SITE ?? 'https://example.github.io';
+const site = process.env.SITE ?? 'https://shafik.dev';
 const base = process.env.BASE ?? '/';
 
 export default defineConfig({
@@ -17,7 +17,7 @@ export default defineConfig({
   base,
   trailingSlash: 'always',
   devToolbar: { enabled: false }, // dev-only overlay; hidden so local previews match production
-  integrations: [sitemap()],
+  integrations: [sitemap({ lastmod: new Date() })],
   markdown: {
     syntaxHighlight: { type: 'shiki', excludeLangs: ['mermaid', 'math'] },
     shikiConfig: {

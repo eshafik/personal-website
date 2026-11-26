@@ -42,6 +42,10 @@ Projects can also have `videos`. Videos load a thumbnail first and only embed
 crops, colour-grades it into the site palette and writes `public/media/portrait-400.webp` (welcome
 screen) and `portrait-og.jpg` (social previews, structured data).
 
+**Share card** — `public/og-card.jpg` (1200×630) is the preview image for Facebook, Messenger,
+LinkedIn, WhatsApp and X. Edit `scripts/og-card.html`, then `npm run og` (uses Google Chrome).
+After changing it, re-scrape in the Facebook Sharing Debugger and LinkedIn Post Inspector.
+
 **Dates** — `Experience.period` and `Education.period` are optional; add real ones and they render.
 
 **Journey graph** — edit `journey` in `profile.ts`. Rows are nodes (`lane` 0 = main line, 1 = branch)
