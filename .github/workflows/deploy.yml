@@ -29,9 +29,9 @@ jobs:
       - run: npm test
       - run: npm run build
         env:
-          # origin = https://USER.github.io (or your custom domain); base_path = "" or "/repo-name"
-          SITE: ${{ steps.pages.outputs.origin }}
-          BASE: ${{ steps.pages.outputs.base_path || '/' }}
+          # Served from the custom domain (Settings → Pages → Custom domain: shafik.dev).
+          SITE: https://shafik.dev
+          BASE: /
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

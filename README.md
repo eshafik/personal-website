@@ -73,9 +73,9 @@ It gets `/research/my-slug/`, appears in `research`, autocomplete, RSS and the s
 2. Repo → Settings → Pages → Source: **GitHub Actions**.
 3. Every push to `main` runs `.github/workflows/deploy.yml` (tests → build → deploy).
 
-The base path is detected automatically: a `USERNAME.github.io` repo serves at `/`, any other repo
-at `/repo-name/`. For a custom domain, set it in Settings → Pages (and add `public/CNAME`); the
-workflow picks it up.
+The site is built for `https://shafik.dev` (set in `.github/workflows/deploy.yml`). The custom
+domain is configured in repo Settings → Pages → Custom domain; DNS lives in Cloudflare
+(A/AAAA records for `@` → GitHub Pages IPs, CNAME `www` → `eshafik.github.io`, all "DNS only").
 
 ## Design notes
 
