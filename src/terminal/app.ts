@@ -1,5 +1,5 @@
 // Terminal UI controller: prompt, autocomplete combobox, history, session persistence, viewers.
-import { createRegistry, type Article, type Ctx } from './commands';
+import { createRegistry, type Ctx } from './commands';
 import type { Suggestion } from './engine';
 import { h, cmd, error, muted, next } from './dom';
 
@@ -18,8 +18,7 @@ const palette = $<HTMLDialogElement>('palette');
 const welcomeTemplate = $('welcome').cloneNode(true) as HTMLElement;
 const coarse = matchMedia('(pointer: coarse)').matches;
 
-const articles: Article[] = JSON.parse($('articles').textContent || '[]');
-const registry = createRegistry(articles);
+const registry = createRegistry();
 
 // ---- session --------------------------------------------------------------------------------
 // Screen state (output transcript, scroll, draft) lives in sessionStorage: it survives reloads and
@@ -82,7 +81,6 @@ const ctx: Ctx = {
   get history() {
     return session.history;
   },
-  articles,
   base,
   get replay() {
     return replaying;

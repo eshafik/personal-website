@@ -49,6 +49,13 @@ const strip = (u: string) => u.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/
       </section>
 
       <section>
+        <h2>Ventures</h2>
+        <dl class="cv-dl">
+          {P.ventures.map((v) => <><dt>{v.name}{v.role && <span class="cv-sub"> · {v.role}</span>}</dt><dd>{v.description} <a href={v.url}>{v.url.replace(/^https?:\/\//, '').replace(/\/$/, '')}</a></dd></>)}
+        </dl>
+      </section>
+
+      <section>
         <h2>Expertise</h2>
         <dl class="cv-dl">
           {P.expertise.map((x) => <><dt>{x.title}</dt><dd>{x.areas.join(', ')}</dd></>)}

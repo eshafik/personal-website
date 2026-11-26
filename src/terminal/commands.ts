@@ -4,17 +4,6 @@ import { h, cmd, heading, p, muted, kv, list, next, error, link, copyButton, fro
 import type { Media } from '../data/profile';
 import { journeyHTML } from './journey';
 
-export interface Article {
-  slug: string;
-  title: string;
-  abstract: string;
-  date: string; // ISO
-  updated?: string;
-  topics: string[];
-  minutes: number;
-  url: string;
-}
-
 export interface Ctx {
   out: (...nodes: (Node | false | undefined)[]) => void;
   run: (line: string) => void;
@@ -26,7 +15,6 @@ export interface Ctx {
   navigate: (url: string) => void;
   setTheme: (t?: string) => string;
   history: string[];
-  articles: Article[];
   base: string;
   replay: boolean;
   registry: Registry<Ctx>;
@@ -34,7 +22,6 @@ export interface Ctx {
 
 type C = Command<Ctx>;
 const P = profile;
-const fmtDate = (iso: string) => new Date(iso).toLocaleDateString('en-GB', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' });
 const opts = <T extends { id: string }>(xs: T[], desc: (x: T) => string): Arg[] => xs.map((x) => ({ value: x.id, desc: desc(x) }));
 const findBy = <T extends { id: string; aliases?: string[] }>(xs: T[], q?: string) =>
   q ? xs.find((x) => x.id === q.toLowerCase() || x.aliases?.includes(q.toLowerCase())) : undefined;
@@ -62,30 +49,6 @@ function experienceEntry(e: (typeof P.experience)[number], full: boolean) {
     (full || e.current) && list(e.work, 'o-bullets'),
   );
 }
-
-function articleList(items: Article[]) {
-  return h(
-    'ol',
-    { class: 'o-articles' },
-    items.map((a) =>
-      h(
-        'li',
-        null,
-        h('a', { href: a.url, class: 'o-art-title', 'data-nav': '' }, a.title),
-        h('p', { class: 'o-art-meta' }, h('time', { datetime: a.date }, fmtDate(a.date)), ` · ${a.topics.join(', ')} · ${a.minutes} min read`),
-        h('p', { class: 'o-art-abs' }, a.abstract),
-        h('p', { class: 'o-art-cmd' }, cmd(`research open ${a.slug}`)),
-      ),
-    ),
-  );
-}
-
-const noArticles = (ctx: Ctx) =>
-  ctx.out(
-    muted('No articles have been published here yet.'),
-    p('Earlier writing lives on my blog: ', link(P.blog.url, P.blog.label), '.'),
-    p('New writing on agentic AI, real-time communication and systems engineering will appear here. Follow via ', link(`${ctx.base}rss.xml`, 'RSS'), '.'),
-  );
 
 // ---- commands -------------------------------------------------------------------------------
 
@@ -189,7 +152,7 @@ const expertise: C = {
           ),
         ),
       ),
-      next(q ? [['expertise', 'All disciplines'], ['experience mevrik', 'Where this is applied now']] : [['projects', 'Selected projects'], ['research', 'Technical writing']]),
+      next(q ? [['expertise', 'All disciplines'], ['experience mevrik', 'Where this is applied now']] : [['projects', 'Selected projects'], ['ventures', 'What I’m building']]),
     );
   },
 };
@@ -334,63 +297,34 @@ const projects: C = {
           ),
         ),
       ),
-      next(q ? [['projects', 'All projects']] : [['expertise', 'Capabilities behind them'], ['research', 'Technical writing']]),
+      next(q ? [['projects', 'All projects']] : [['expertise', 'Capabilities behind them'], ['ventures', 'Technurah & Kids Lab']]),
     );
   },
 };
 
-const research: C = {
-  name: 'research',
-  aliases: ['articles', 'blog', 'writing'],
-  desc: 'Technical research and articles',
-  usage: 'research [latest|list|topics|search <query>|open <slug>]',
+const ventures: C = {
+  name: 'ventures',
+  aliases: ['building', 'startups', 'technurah', 'kidslab'],
+  desc: 'Technurah & Kids Lab Center',
   primary: true,
-  man: 'Browse technical writing. Each article opens in a full-screen reader with its own shareable URL.',
-  args: (t) => {
-    const arts = articlesRef;
-    if (t[0] === 'open') return t.length === 1 ? arts.map((a) => ({ value: a.slug, desc: a.title })) : [];
-    if (t[0] === 'search') {
-      const topics = [...new Set(arts.flatMap((a) => a.topics))];
-      return t.length === 1 ? topics.map((x) => ({ value: x.toLowerCase(), desc: 'topic' })) : [];
-    }
-    if (t.length) return [];
-    return [
-      { value: 'latest', desc: 'Most recent article' },
-      { value: 'list', desc: 'All articles' },
-      { value: 'topics', desc: 'Articles grouped by topic' },
-      { value: 'search', desc: 'Search titles, abstracts and topics', more: true },
-      { value: 'open', desc: 'Open an article by slug', more: true },
-    ];
-  },
-  run: ([sub, ...rest], ctx) => {
-    const arts = ctx.articles;
-    const s = sub?.toLowerCase();
-    if (s === 'open') {
-      const slug = rest[0];
-      const a = arts.find((x) => x.slug === slug?.toLowerCase());
-      if (!a) return slug ? notFound(ctx, 'article', slug, arts.map((x) => x.slug), 'research open') : ctx.out(error('Usage: research open <slug>'));
-      ctx.out(muted('Opening ', h('a', { href: a.url, 'data-nav': '' }, a.title), ' …'));
-      if (!ctx.replay) ctx.navigate(a.url);
-      return;
-    }
-    if (!arts.length) return noArticles(ctx);
-    if (s === 'latest') return ctx.out(heading('Latest'), articleList(arts.slice(0, 1)), next([['research list', 'All articles']]));
-    if (s === 'topics') {
-      const topics = [...new Set(arts.flatMap((a) => a.topics))].sort();
-      return ctx.out(
-        heading('Topics'),
-        kv(topics.map((t) => [t, h('span', null, ...arts.filter((a) => a.topics.includes(t)).map((a) => cmd(`research open ${a.slug}`, a.title)))])),
-      );
-    }
-    if (s === 'search') {
-      const q = rest.join(' ').toLowerCase();
-      if (!q) return ctx.out(error('Usage: research search <query>'));
-      const hits = arts.filter((a) => [a.title, a.abstract, ...a.topics].join(' ').toLowerCase().includes(q));
-      return ctx.out(heading(`Search: “${rest.join(' ')}”`, `${hits.length} result${hits.length === 1 ? '' : 's'}`), hits.length ? articleList(hits) : muted('No matches.'), next([['research list', 'All articles']]));
-    }
-    if (s && s !== 'list') return ctx.out(error(`Unknown subcommand “${sub}”.`), next([['man research', 'Usage']]));
-    ctx.out(heading('Research', `${arts.length} article${arts.length === 1 ? '' : 's'}`), articleList(arts), next([['research topics', 'Browse by topic'], ['research search agentic', 'Search']]));
-  },
+  run: (_, ctx) =>
+    ctx.out(
+      heading('Ventures', 'what I’m building beyond Mevrik'),
+      h(
+        'div',
+        { class: 'o-reg' },
+        P.ventures.map((v) =>
+          h(
+            'article',
+            { class: 'o-reg-item is-current' },
+            h('header', null, h('h3', null, link(v.url, `${v.name} ↗`)), v.role && h('span', { class: 'o-role' }, v.role)),
+            h('p', { class: 'o-domain' }, v.tagline, ' · ', link(v.url, v.url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, ''))),
+            p(v.description),
+          ),
+        ),
+      ),
+      next([['projects', 'Engineering projects'], ['contact', 'Get in touch']]),
+    ),
 };
 
 const cv: C = {
@@ -414,9 +348,11 @@ const contact: C = {
     const rows: [string, Node][] = [];
     if (email) rows.push(['email', h('span', null, link(`mailto:${email}`, email), ' ', copyButton(email))]);
     if (phone) rows.push(['phone', h('span', null, link(`tel:${phone.replace(/\s/g, '')}`, phone), ' ', copyButton(phone))]);
+    const linkedin = P.links.find((l) => l.label === 'LinkedIn');
+    if (linkedin) rows.push(['linkedin', h('span', null, link(linkedin.url, linkedin.display ?? linkedin.url), ' ', copyButton(linkedin.url))]);
     ctx.out(
       heading('Contact'),
-      rows.length ? kv(rows) : muted('Direct contact details have not been published yet.'),
+      rows.length ? kv(rows) : muted('Contact details have not been published yet.'),
       kv([['location', P.location]]),
       next([['links', 'Professional profiles'], ['cv', 'Open CV']]),
     );
@@ -434,7 +370,6 @@ const links: C = {
       P.links.length
         ? kv(P.links.map((l) => [l.label, h('span', null, link(l.url, l.display ?? l.url.replace(/^https?:\/\/(www\.)?/, '')), l.note && h('span', { class: 'o-muted' }, ` — ${l.note}`), ' ', copyButton(l.url))]))
         : muted('Profiles have not been published yet.'),
-      kv([['rss', link(`${ctx.base}rss.xml`, 'rss.xml')]]),
     ),
 };
 
@@ -461,7 +396,7 @@ const help: C = {
         ['Ctrl+L', 'Clear screen'],
         ['Ctrl+C', 'Cancel input'],
       ]),
-      next([['man research', 'Detailed documentation for a command']]),
+      next([['man experience', 'Detailed documentation for a command']]),
     );
   },
 };
@@ -495,7 +430,7 @@ const ls: C = {
           ['robotics/', 'robotics'],
           ['achievements.txt', 'achievements'],
           ['projects/', 'projects'],
-          ['research/', 'research'],
+          ['ventures/', 'ventures'],
           ['cv', 'cv'],
           ['contact.txt', 'contact'],
           ['links.txt', 'links'],
@@ -509,14 +444,14 @@ const pwd: C = { name: 'pwd', desc: 'Current location', run: (_, ctx) => ctx.out
 const catMap: Record<string, string> = {
   about: 'about', 'about.txt': 'about', journey: 'journey', experience: 'experience', expertise: 'expertise',
   education: 'education', robotics: 'robotics', achievements: 'achievements', 'achievements.txt': 'achievements',
-  projects: 'projects', research: 'research', contact: 'contact', 'contact.txt': 'contact', links: 'links', 'links.txt': 'links', cv: 'cv',
+  projects: 'projects', ventures: 'ventures', contact: 'contact', 'contact.txt': 'contact', links: 'links', 'links.txt': 'links', cv: 'cv',
 };
 const cat: C = {
   name: 'cat',
   aliases: ['less', 'more', 'open'],
   desc: 'Read a content resource',
   usage: 'cat <resource>',
-  args: (t) => (t.length ? [] : ['about', 'experience', 'education', 'expertise', 'robotics', 'achievements', 'projects', 'contact', 'links'].map((v) => ({ value: v }))),
+  args: (t) => (t.length ? [] : ['about', 'experience', 'education', 'expertise', 'robotics', 'achievements', 'projects', 'ventures', 'contact', 'links'].map((v) => ({ value: v }))),
   run: ([r], ctx) => {
     const target = r && catMap[r.toLowerCase().replace(/\/$/, '')];
     if (!target) return ctx.out(error(r ? `cat: ${r}: No such file` : 'Usage: cat <resource>'), next([['ls', 'List resources']]));
@@ -542,7 +477,7 @@ const man: C = {
   args: (t) => (t.length ? [] : registryRef.commands.map((c) => ({ value: c.name, desc: c.desc }))),
   run: ([name], ctx) => {
     const c = name && ctx.registry.get(name);
-    if (!c) return ctx.out(error(name ? `No manual entry for ${name}` : 'What manual page do you want? Try: man research'));
+    if (!c) return ctx.out(error(name ? `No manual entry for ${name}` : 'What manual page do you want? Try: man experience'));
     const argList = c.args?.([]) ?? [];
     ctx.out(
       heading(`${c.name.toUpperCase()}(1)`, 'manual'),
@@ -565,15 +500,13 @@ const theme: C = {
   run: ([t], ctx) => ctx.out(muted(`Theme: ${ctx.setTheme(t)}`)),
 };
 
-let articlesRef: Article[] = [];
 let registryRef: Registry<Ctx>;
 
-export function createRegistry(articles: Article[]) {
-  articlesRef = articles;
+export function createRegistry() {
   return (registryRef = new Registry<Ctx>(commands));
 }
 
 const commands: C[] = [
-  about, journeyCmd, experience, expertise, education, robotics, achievements, research, projects, cv, contact, links, help,
+  about, journeyCmd, experience, expertise, education, robotics, achievements, projects, ventures, cv, contact, links, help,
   ls, cat, man, history, pwd, theme, clear, home, exit,
 ];

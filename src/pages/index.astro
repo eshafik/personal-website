@@ -3,20 +3,8 @@ import Base from '../layouts/Base.astro';
 import CV from '../components/CV.astro';
 import { profile as P } from '../data/profile';
 import { journeyHTML } from '../terminal/journey';
-import { getArticles, readingMinutes, articleUrl } from '../data/research';
 
 const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
-
-const articles = (await getArticles()).map((a) => ({
-  slug: a.id,
-  title: a.data.title,
-  abstract: a.data.abstract,
-  date: a.data.date.toISOString(),
-  updated: a.data.updated?.toISOString(),
-  topics: a.data.topics,
-  minutes: readingMinutes(a.body),
-  url: articleUrl(a.id),
-}));
 
 const primary = [
   ['about', 'Personal introduction'],
@@ -26,7 +14,7 @@ const primary = [
   ['education', 'Academic qualifications'],
   ['robotics', 'Robotics journey and projects'],
   ['achievements', 'Awards and achievements'],
-  ['research', 'Technical research and articles'],
+  ['ventures', 'Technurah & Kids Lab Center'],
   ['projects', 'Engineering projects'],
   ['cv', 'Open full-screen CV'],
   ['contact', 'Contact information'],
@@ -88,6 +76,7 @@ const msc = P.education.find((e) => e.id === 'masters')!;
             <dl class="w-kv">
               <dt>location</dt><dd>{P.location}</dd>
               <dt>education</dt><dd><button type="button" class="cmd" data-cmd="education masters">{msc.short}</button>, {msc.institution} · CGPA {msc.score}</dd>
+              <dt>ventures</dt><dd>{P.ventures.map((v) => <span class="w-line"><a href={v.url} target="_blank" rel="noopener noreferrer">{v.name} ↗</a> <span class="w-muted">— {v.role ? `${v.role} · ` : ''}{v.tagline}</span></span>)}</dd>
               <dt>focus</dt><dd>{P.focus.join(' · ')}</dd>
               <dt>scope</dt><dd>Backend &amp; DevOps first — full stack with AI-assisted engineering</dd>
               <dt>path</dt><dd>Textile Engineering → Robotics → Software → Agentic AI</dd>
@@ -95,7 +84,7 @@ const msc = P.education.find((e) => e.id === 'masters')!;
             <div class="w-start">
               <p>Type a command or select one from the suggestions below.</p>
               <ul class="chips" aria-label="Quick commands">
-                {['about', 'experience', 'expertise', 'education', 'cv', 'contact', 'help'].map((c) => (
+                {['about', 'experience', 'expertise', 'education', 'ventures', 'contact', 'help'].map((c) => (
                   <li><button type="button" class="cmd" data-cmd={c}>{c}</button></li>
                 ))}
               </ul>
@@ -160,7 +149,6 @@ const msc = P.education.find((e) => e.id === 'masters')!;
     <button type="button" class="tool" data-close>Close</button>
   </dialog>
 
-  <script type="application/json" id="articles" set:html={JSON.stringify(articles).replace(/</g, '\\u003c')} />
   <script>
     import '../terminal/app';
   </script>

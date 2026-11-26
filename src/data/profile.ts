@@ -59,6 +59,15 @@ export interface Project {
   videos?: Video[];
 }
 
+export interface Venture {
+  id: string;
+  name: string;
+  role?: string;
+  tagline: string;
+  description: string;
+  url: string;
+}
+
 export interface Media {
   /** Path under /public, e.g. "media/techfest.jpg" (no leading slash) */
   src: string;
@@ -351,14 +360,6 @@ export const profile = {
       contributions: ['Voice-enabled AI agents', 'Telephony integration'],
     },
     {
-      id: 'technurah',
-      title: 'Technurah — industrial energy monitoring',
-      context: 'Industrial IoT',
-      description: 'IoT-powered, real-time energy and production monitoring for factories.',
-      contributions: ['Industrial IoT energy monitoring system'],
-      links: [{ label: 'technurah.com', url: 'https://technurah.com/' }],
-    },
-    {
       id: 'solar-iot',
       title: 'Renewable energy & IoT backend',
       context: 'SOLshare',
@@ -382,15 +383,25 @@ export const profile = {
       contributions: ['Team leader; programming and robot development'],
       videos: [{ id: 'Rb9oIEXdq3M', title: 'DUET TechFest 2017 — championship run' }],
     },
+  ] as Project[],
+
+  ventures: [
+    {
+      id: 'technurah',
+      name: 'Technurah',
+      tagline: 'Industrial IoT energy monitoring',
+      description: 'IoT-powered, real-time energy and production monitoring for factories — every watt, every machine, every shift.',
+      url: 'https://technurah.com/',
+    },
     {
       id: 'kidslab',
-      title: 'Kids Lab Center',
-      context: 'Founder',
+      name: 'Kids Lab Center',
+      role: 'Founder',
+      tagline: 'Science learning for children',
       description: 'A science learning centre for children — “Big Discoveries for Little Scientists”.',
-      contributions: ['Founder'],
-      links: [{ label: 'kidslab.center', url: 'https://kidslab.center/' }],
+      url: 'https://kidslab.center/',
     },
-  ] as Project[],
+  ] as Venture[],
 
   /** Leave a field undefined to hide it. Never put a placeholder address here. */
   contact: {

@@ -290,6 +290,12 @@ html.term body {
 .w-kv dd {
   margin: 0;
 }
+.w-muted {
+  color: var(--text-2);
+}
+.w-line {
+  display: block;
+}
 .w-start {
   border-left: 2px solid var(--cmd);
   padding: 2px 0 2px 14px;
