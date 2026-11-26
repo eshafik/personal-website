@@ -8,12 +8,14 @@ import { profile } from '../data/profile';
 
 interface Props {
   title: string;
+  /** Title for share cards / search; defaults to `title` (the browser tab). */
+  shareTitle?: string;
   description: string;
   type?: 'website' | 'article' | 'profile';
   jsonLd?: Record<string, unknown>;
   htmlClass?: string;
 }
-const { title, description, type = 'website', jsonLd, htmlClass } = Astro.props;
+const { title, description, type = 'website', jsonLd, htmlClass, shareTitle = title } = Astro.props;
 const canonical = new URL(Astro.url.pathname, Astro.site);
 const ogImage = new URL(`${import.meta.env.BASE_URL.replace(/\/?$/, '/')}og-card.jpg`, Astro.site).href;
 const ogAlt = `${profile.name} (${profile.alias}) — ${profile.title}`;
@@ -31,7 +33,7 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
     <link rel="canonical" href={canonical} />
     <meta name="theme-color" content="#111413" />
     <meta property="og:type" content={type} />
-    <meta property="og:title" content={title} />
+    <meta property="og:title" content={shareTitle} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonical} />
     <meta property="og:site_name" content={`${profile.name} (${profile.alias})`} />
@@ -50,7 +52,7 @@ const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
       </>
     )}
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content={title} />
+    <meta name="twitter:title" content={shareTitle} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImage} />
     <meta name="twitter:image:alt" content={ogAlt} />

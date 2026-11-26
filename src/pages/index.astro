@@ -73,7 +73,8 @@ const [first, ...rest] = P.name.split(' ');
 const msc = P.education.find((e) => e.id === 'masters')!;
 ---
 <Base
-  title={pageTitle}
+  title={`${P.alias} — Lead Software Engineer & Agentic AI Developer`}
+  shareTitle={pageTitle}
   description={pageDescription}
   type="profile"
   jsonLd={jsonLd}
